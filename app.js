@@ -34,7 +34,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect("mongodb://localhost:27017/userDB", {
+mongoose.connect("mongodb://MongoDev:27017/userDB", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
@@ -55,19 +55,19 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 //Reqguests GET
-app.get("/", function(req, res) {
+app.get("/", function (req, res) {
   res.render("home");
 });
 
-app.get("/login", function(req, res) {
+app.get("/login", function (req, res) {
   res.render("login");
 });
 
-app.get("/register", function(req, res) {
+app.get("/register", function (req, res) {
   res.render("register");
 });
 
-app.get("/secrets", function(req, res) {
+app.get("/secrets", function (req, res) {
   if (req.isAuthenticated()) {
     res.render("secrets");
   } else {
@@ -75,7 +75,7 @@ app.get("/secrets", function(req, res) {
   }
 });
 
-app.get("/logout", function(req, res) {
+app.get("/logout", function (req, res) {
   req.logout();
   res.redirect("/");
 });
@@ -83,8 +83,10 @@ app.get("/logout", function(req, res) {
 //POST REQUESTS
 
 //Register using mongoose-passport-local
-app.post("/register", function(req, res) {
-  User.register({ username: req.body.username }, req.body.password, function(
+app.post("/register", function (req, res) {
+  User.register({
+    username: req.body.username
+  }, req.body.password, function (
     err,
     user
   ) {
@@ -92,7 +94,7 @@ app.post("/register", function(req, res) {
       console.log(err);
       res.redirect("/register");
     } else {
-      passport.authenticate("local")(req, res, function() {
+      passport.authenticate("local")(req, res, function () {
         res.redirect("/secrets");
       });
     }
@@ -104,11 +106,11 @@ app.post("/login", (req, res) => {
     username: req.body.username,
     password: req.body.password
   });
-  req.login(user, function(err) {
+  req.login(user, function (err) {
     if (err) {
       console.log(err);
     } else {
-      passport.authenticate("local")(req, res, function() {
+      passport.authenticate("local")(req, res, function () {
         res.redirect("/secrets");
       });
     }
@@ -157,12 +159,12 @@ app.post("/login", (req, res) => {
 // });
 
 /////////////////////////// API GET CALL TO SEE USERS //////////////////////////////////////////////
-app.get("/getusers", function(req, res) {
-  User.find(function(err, foundUsers) {
+app.get("/getusers", function (req, res) {
+  User.find(function (err, foundUsers) {
     res.send(foundUsers);
   });
 });
 
-app.listen(3000, function() {
+app.listen(3000, function () {
   console.log("App has been started");
 });
