@@ -8,6 +8,8 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const oauth = require("passport-google-oauth20");
+const fs = require("fs");
+const https = require("https");
 
 const bcrypt = require("bcryptjs");
 const saltRounds = 10; // Salting rounds for bcrypt
@@ -166,6 +168,34 @@ app.get("/getusers", function(req, res) {
   });
 });
 
-app.listen(3000, function() {
-  console.log("App has been started");
+//Certificates
+const privateKey = fs.readFileSync(
+  "/etc/letsencrypt/live/letmewebyou.com/privkey.pem"
+);
+const certificate = fs.readFileSync(
+  "/etc/letsencrypt/live/letmewebyou.com/cert.pem"
+);
+const ca = fs.readFileSync("/etc/letsencrypt/live/letmewebyou.com/chain.pem");
+/etc/ceelnprstty / live / letmewebyou.com;
+
+const credentials = {
+  key: privateKey,
+  cert: certificate,
+  ca: ca
+};
+
+// app.listen(3000, function() {
+//   console.log("App has been started");
+// });
+
+//Starting http and https
+const httpServer = http.createServer(app);
+const httpsServer = https.createServer(credentials, app);
+
+httpServer.listen(3000, () => {
+  console.log("HTTP Server running on port 3000");
+});
+
+httpsServer.listen(3443, () => {
+  console.log("HTTPS Server running on port 3443");
 });
