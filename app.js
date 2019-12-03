@@ -9,7 +9,7 @@ const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const oauth = require("passport-google-oauth20");
 const https = require("https");
-const fs = require('fs');
+const fs = require("fs");
 
 const bcrypt = require("bcryptjs");
 const saltRounds = 10; // Salting rounds for bcrypt
@@ -168,15 +168,18 @@ app.get("/getusers", function(req, res) {
   });
 });
 
-
-https.createServer({
-  key: fs.readFileSync('/etc/letsencrypt/live/letmewebyou.com/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/letmewebyou.com/cert.pem'),
-  ca:fs.readFileSync('/etc/letsencrypt/live/letmewebyou.com/chain.pem')
-}, app).listen(443,() => {
-  console.log('Listening...')
-})
-)
+https
+  .createServer(
+    {
+      key: fs.readFileSync("/etc/letsencrypt/live/letmewebyou.com/privkey.pem"),
+      cert: fs.readFileSync("/etc/letsencrypt/live/letmewebyou.com/cert.pem"),
+      ca: fs.readFileSync("/etc/letsencrypt/live/letmewebyou.com/chain.pem")
+    },
+    app
+  )
+  .listen(443, () => {
+    console.log("Listening...");
+  });
 
 app.listen(3000, function() {
   console.log("App has been started");
