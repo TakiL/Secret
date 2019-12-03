@@ -8,6 +8,8 @@ const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
 const oauth = require("passport-google-oauth20");
+const https = require("https");
+const fs = require('fs');
 
 const bcrypt = require("bcryptjs");
 const saltRounds = 10; // Salting rounds for bcrypt
@@ -55,19 +57,19 @@ passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 //Reqguests GET
-app.get("/", function (req, res) {
+app.get("/", function(req, res) {
   res.render("home");
 });
 
-app.get("/login", function (req, res) {
+app.get("/login", function(req, res) {
   res.render("login");
 });
 
-app.get("/register", function (req, res) {
+app.get("/register", function(req, res) {
   res.render("register");
 });
 
-app.get("/secrets", function (req, res) {
+app.get("/secrets", function(req, res) {
   if (req.isAuthenticated()) {
     res.render("secrets");
   } else {
@@ -75,7 +77,7 @@ app.get("/secrets", function (req, res) {
   }
 });
 
-app.get("/logout", function (req, res) {
+app.get("/logout", function(req, res) {
   req.logout();
   res.redirect("/");
 });
@@ -83,22 +85,23 @@ app.get("/logout", function (req, res) {
 //POST REQUESTS
 
 //Register using mongoose-passport-local
-app.post("/register", function (req, res) {
-  User.register({
-    username: req.body.username
-  }, req.body.password, function (
-    err,
-    user
-  ) {
-    if (err) {
-      console.log(err);
-      res.redirect("/register");
-    } else {
-      passport.authenticate("local")(req, res, function () {
-        res.redirect("/secrets");
-      });
+app.post("/register", function(req, res) {
+  User.register(
+    {
+      username: req.body.username
+    },
+    req.body.password,
+    function(err, user) {
+      if (err) {
+        console.log(err);
+        res.redirect("/register");
+      } else {
+        passport.authenticate("local")(req, res, function() {
+          res.redirect("/secrets");
+        });
+      }
     }
-  });
+  );
 });
 
 app.post("/login", (req, res) => {
@@ -106,11 +109,11 @@ app.post("/login", (req, res) => {
     username: req.body.username,
     password: req.body.password
   });
-  req.login(user, function (err) {
+  req.login(user, function(err) {
     if (err) {
       console.log(err);
     } else {
-      passport.authenticate("local")(req, res, function () {
+      passport.authenticate("local")(req, res, function() {
         res.redirect("/secrets");
       });
     }
@@ -159,12 +162,22 @@ app.post("/login", (req, res) => {
 // });
 
 /////////////////////////// API GET CALL TO SEE USERS //////////////////////////////////////////////
-app.get("/getusers", function (req, res) {
-  User.find(function (err, foundUsers) {
+app.get("/getusers", function(req, res) {
+  User.find(function(err, foundUsers) {
     res.send(foundUsers);
   });
 });
 
-app.listen(3000, function () {
+
+https.createServer({
+  key: fs.readFileSync('/etc/letsencrypt/live/letmewebyou.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/letmewebyou.com/cert.pem'),
+  ca:fs.readFileSync('/etc/letsencrypt/live/letmewebyou.com/chain.pem')
+}, app).listen(443,() => {
+  console.log('Listening...')
+})
+)
+
+app.listen(3000, function() {
   console.log("App has been started");
 });
