@@ -7,9 +7,9 @@ const mongoose = require("mongoose");
 const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
-const oauth = require("passport-google-oauth20");
-const fs = require("fs");
-const https = require("https");
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const findOrCreate = require("mongoose-findorcreate");
+const oauthSetup = require('./oauth-setup')
 
 const bcrypt = require("bcryptjs");
 const saltRounds = 10; // Salting rounds for bcrypt
@@ -32,11 +32,14 @@ app.use(
   })
 );
 
+//--Session initialized--//
+
 //Passport initialized
 app.use(passport.initialize());
 app.use(passport.session());
+//---Passport initialized--//
 
-mongoose.connect("mongodb://MongoDev:27017/userDB", {
+mongoose.connect("mongodb://localhost:27017/userDB", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
@@ -49,6 +52,7 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.plugin(passportLocalMongoose);
+userSchema.plugin(findOrCreate);
 
 const User = new mongoose.model("User", userSchema);
 
@@ -56,20 +60,45 @@ passport.use(User.createStrategy());
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
+//Google OAuth
+
+// passport.use(
+//   new GoogleStrategy({
+//       clientID: process.env.CLIENT_ID,
+//       clientSecret: process.env.CLIENT_SECRET,
+//       callbackURL: "http://localhost:3000/auth/google/secrets",
+//       userProfileURL: "https://googleapis.com/oauth2/v3/userinfo"
+//     },
+//     function (accessToken, refreshToken, profile, cb) {
+//       User.findOrCreate({
+//         googleId: profile.id
+//       }, function (err, user) {
+//         return cb(err, user);
+//       });
+//     }
+//   )
+// );
+
+///----GoogleOauth----///
+
 //Reqguests GET
-app.get("/", function(req, res) {
+app.get("/", function (req, res) {
   res.render("home");
 });
 
-app.get("/login", function(req, res) {
+app.get("/auth/google", passport.authenticate('google', {
+  scope: ['profile']
+}))
+
+app.get("/login", function (req, res) {
   res.render("login");
 });
 
-app.get("/register", function(req, res) {
+app.get("/register", function (req, res) {
   res.render("register");
 });
 
-app.get("/secrets", function(req, res) {
+app.get("/secrets", function (req, res) {
   if (req.isAuthenticated()) {
     res.render("secrets");
   } else {
@@ -77,7 +106,7 @@ app.get("/secrets", function(req, res) {
   }
 });
 
-app.get("/logout", function(req, res) {
+app.get("/logout", function (req, res) {
   req.logout();
   res.redirect("/");
 });
@@ -85,18 +114,17 @@ app.get("/logout", function(req, res) {
 //POST REQUESTS
 
 //Register using mongoose-passport-local
-app.post("/register", function(req, res) {
-  User.register(
-    {
+app.post("/register", function (req, res) {
+  User.register({
       username: req.body.username
     },
     req.body.password,
-    function(err, user) {
+    function (err, user) {
       if (err) {
         console.log(err);
         res.redirect("/register");
       } else {
-        passport.authenticate("local")(req, res, function() {
+        passport.authenticate("local")(req, res, function () {
           res.redirect("/secrets");
         });
       }
@@ -109,11 +137,11 @@ app.post("/login", (req, res) => {
     username: req.body.username,
     password: req.body.password
   });
-  req.login(user, function(err) {
+  req.login(user, function (err) {
     if (err) {
       console.log(err);
     } else {
-      passport.authenticate("local")(req, res, function() {
+      passport.authenticate("local")(req, res, function () {
         res.redirect("/secrets");
       });
     }
@@ -162,40 +190,28 @@ app.post("/login", (req, res) => {
 // });
 
 /////////////////////////// API GET CALL TO SEE USERS //////////////////////////////////////////////
-app.get("/getusers", function(req, res) {
-  User.find(function(err, foundUsers) {
+app.get("/getusers", function (req, res) {
+  User.find(function (err, foundUsers) {
     res.send(foundUsers);
   });
 });
 
-//Certificates
-const privateKey = fs.readFileSync(
-  "/etc/letsencrypt/live/letmewebyou.com/privkey.pem"
-);
-const certificate = fs.readFileSync(
-  "/etc/letsencrypt/live/letmewebyou.com/cert.pem"
-);
-const ca = fs.readFileSync("/etc/letsencrypt/live/letmewebyou.com/chain.pem");
-/etc/ceelnprstty / live / letmewebyou.com;
+// Certificates
+// const privateKey = fs.readFileSync(
+//   "/etc/letsencrypt/live/letmewebyou.com/privkey.pem"
+// );
+// const certificate = fs.readFileSync(
+//   "/etc/letsencrypt/live/letmewebyou.com/cert.pem"
+// );
+// const ca = fs.readFileSync("/etc/letsencrypt/live/letmewebyou.com/chain.pem");
+// /etc/ceelnprstty / live / letmewebyou.com;
 
-const credentials = {
-  key: privateKey,
-  cert: certificate,
-  ca: ca
-};
+// const credentials = {
+//   key: privateKey,
+//   cert: certificate,
+//   ca: ca
+// };
 
-// app.listen(3000, function() {
-//   console.log("App has been started");
-// });
-
-//Starting http and https
-const httpServer = http.createServer(app);
-const httpsServer = https.createServer(credentials, app);
-
-httpServer.listen(3000, () => {
-  console.log("HTTP Server running on port 3000");
-});
-
-httpsServer.listen(3443, () => {
-  console.log("HTTPS Server running on port 3443");
+app.listen(3000, function () {
+  console.log("App has been started");
 });
